@@ -1,11 +1,14 @@
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin, UserPassesTestMixin
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils.http import urlencode
 
+
 from django.db.models import Q
-from webapp.models import Article
-from webapp.forms import ArticleForm, SimpleSearchForm
+from ..models import Article, ArticleLike
+from ..forms import ArticleForm, SimpleSearchForm
 from django.views.generic import View, FormView, ListView, DetailView, CreateView, UpdateView, DeleteView
 
 
@@ -115,3 +118,25 @@ class ArticleDeleteView(UserPassesTestMixin, DeleteView):
     #     article = get_object_or_404(Article, pk=kwargs.get('pk'))
     #     article.delete()
     #     return redirect('webapp:index')
+
+
+class LikeArticleView(View):
+    def post(self, request, article_id, *args, **kwargs):
+        return self.toggle_like(request, article_id, liked=True)
+
+    def delete(self, request, article_id, *args, **kwargs):
+        return self.toggle_like(request, article_id, liked=False)
+
+    def toggle_like(self, request, article_id, liked):
+        article = get_object_or_404(Article, id=article_id)
+
+        if request.user.is_authenticated:
+            if liked:
+                article.likes.add(request.user)
+            else:
+                article.likes.remove(request.user)
+
+            like_count = article.likes.count()
+            return JsonResponse({'liked': liked, 'like_count': like_count})
+        else:
+            return JsonResponse({'error': 'User not authenticated'}, status=401)

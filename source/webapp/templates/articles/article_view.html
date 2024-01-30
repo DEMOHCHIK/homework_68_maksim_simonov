@@ -28,6 +28,16 @@
             {% endfor %}
             </p>
             <p>{{ article.created_at }}</p>
+
+            <div class="mt-2">
+                {% if request.user.is_authenticated %}
+                    <button class="like-button" data-article-id="{{ article.id }}"
+                            data-liked="{% if user in article.likes.all %}true{% else %}false{% endif %}">
+                        {% if user in article.likes.all %}Unlike{% else %}Like{% endif %}
+                    </button>
+                {% endif %}
+                <span class="like-count"><b>Понравилось:</b> {{ article.likes.count }}</span>
+            </div>
         </div>
     </div>
     <h3 class="mt-2">Comments: </h3>
@@ -40,6 +50,16 @@
                         <h5 class="card-title">Автор: {{ comment.author }}</h5>
                         <p class="card-text">{{ comment.text }}</p>
                         <p>{{ article.created_at }}</p>
+
+                        <div class="mt-2">
+                            {% if request.user.is_authenticated %}
+                                <button class="like-comment-button" data-comment-id="{{ comment.id }}"
+                                        data-liked="{% if user in comment.likes.all %}true{% else %}false{% endif %}">
+                                    {% if user in comment.likes.all %}Unlike{% else %}Like{% endif %}
+                                </button>
+                            {% endif %}
+                            <span class="like-comment-count-{{ comment.id }}"><b>Понравилось:</b> {{ comment.likes.count }}</span>
+                        </div>
 
                         {% if perms.webapp.change_comment or comment.author == request.user %}
                             <a href="{% url 'webapp:comment_update_view' pk=comment.pk %}"
@@ -54,3 +74,90 @@
         {% endfor %}
     </div>
 {% endblock %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let likeButtons = document.querySelectorAll(".like-button");
+
+        likeButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                handleLikeButtonClick(button);
+            });
+        });
+    });
+
+    function handleLikeButtonClick(button) {
+        let articleId = button.getAttribute("data-article-id");
+        let csrftoken = getCookie('csrftoken');
+        let method = button.getAttribute("data-liked") === 'true' ? 'DELETE' : 'POST';
+
+        fetch(`/like-article/${articleId}/`, {
+            method: method,
+            headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrftoken,
+            },
+        })
+            .then(response => response.json())
+            .then(data => updateLikeButton(button, data))
+            .catch(error => console.error("Error:", error));
+    }
+
+    function updateLikeButton(button, data) {
+        button.textContent = data.liked ? "Unlike" : "Like";
+        button.setAttribute("data-liked", data.liked);
+        document.querySelector(".like-count").textContent = data.like_count;
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let likeButtons = document.querySelectorAll(".like-comment-button");
+
+        likeButtons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                handleLikeCommentButtonClick(button);
+            });
+        });
+    });
+
+    function handleLikeCommentButtonClick(button) {
+        let commentId = button.getAttribute("data-comment-id");
+        let csrftoken = getCookie('csrftoken');
+        let method = button.getAttribute("data-liked") === 'true' ? 'DELETE' : 'POST';
+
+        fetch(`/like-comment/${commentId}/`, {
+            method: method,
+            headers: {
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrftoken,
+            },
+        })
+            .then(response => response.json())
+            .then(data => updateLikeCommentButton(button, data))
+            .catch(error => console.error("Error:", error));
+    }
+
+    function updateLikeCommentButton(button, data) {
+        button.textContent = data.liked ? "Unlike" : "Like";
+        button.setAttribute("data-liked", data.liked);
+        document.querySelector(".like-comment-count-" + data.comment_id).textContent = data.like_count;
+    }
+</script>

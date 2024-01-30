@@ -12,12 +12,22 @@ class AbstractModel(models.Model):
         abstract = True
 
 
+class Tag(AbstractModel):
+    name = models.CharField(max_length=31, verbose_name='Тег')
+
+    def __str__(self):
+        return self.name
+
+
 class Article(AbstractModel):
     title = models.CharField(max_length=50, null=False, blank=False, validators=[MinLengthValidator(4), ],
                              verbose_name="Заголовок")
     content = models.TextField(max_length=3000, null=False, blank=False, verbose_name='Контент')
-    author = models.ForeignKey(get_user_model(), default=1, related_name='articles', on_delete=models.CASCADE, verbose_name="Автор")
+    author = models.ForeignKey(get_user_model(), default=1, related_name='articles', on_delete=models.CASCADE,
+                               verbose_name="Автор")
     tags = models.ManyToManyField('webapp.Tag', blank=True, related_name='articles', verbose_name='Теги')
+    likes = models.ManyToManyField('webapp.ArticleLike', related_name='article_likes', blank=True,
+                                   verbose_name="Лайки статей")
 
     def __str__(self):
         return f'{self.id}. {self.title}'
@@ -31,14 +41,18 @@ class Comment(AbstractModel):
                                 verbose_name='Статья')
     text = models.TextField(max_length=400, verbose_name='Комментарий')
 
-    author = models.ForeignKey(get_user_model(), default=1, related_name='comments', on_delete=models.CASCADE, verbose_name="Автор")
+    author = models.ForeignKey(get_user_model(), default=1, related_name='comments', on_delete=models.CASCADE,
+                               verbose_name="Автор")
+    likes = models.ManyToManyField('webapp.CommentLike', related_name='comment_likes', blank=True,
+                                   verbose_name="Лайки комментариев")
 
     def __str__(self):
         return self.text[:20]
 
 
-class Tag(AbstractModel):
-    name = models.CharField(max_length=31, verbose_name='Тег')
+class ArticleLike(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, verbose_name="Автор")
 
-    def __str__(self):
-        return self.name
+
+class CommentLike(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, verbose_name="Автор")

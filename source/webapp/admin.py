@@ -1,5 +1,5 @@
 from django.contrib import admin
-from webapp.models import Article, Comment
+from .models import Article, Comment, ArticleLike, CommentLike
 
 
 @admin.register(Article)
@@ -13,3 +13,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Comment)
+
+admin.site.register(ArticleLike)
+
+admin.site.register(CommentLike)
