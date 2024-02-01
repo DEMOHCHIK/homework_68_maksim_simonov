@@ -24,7 +24,7 @@
                     {% if perms.webapp.delete_article or article.author == request.user %}
                         <a href="{% url 'webapp:article_delete_view' pk=article.pk %}" class="card-link">Удалить</a>
                     {% endif %}
-                    <div class="mt-2">
+                    <div class="like_block mt-2">
                         {% if request.user.is_authenticated %}
                             <a class="article_like" style="color: red; text-decoration: none"
                                data-span-count-id="count_article_likes_{{ article.pk }}"
@@ -44,7 +44,6 @@
         </div>
         {% empty %}
         <p>Нет статей</p>
-
     {% endfor %}
 </div>
 
@@ -63,14 +62,14 @@
 
     async function onClick(e) {
         e.preventDefault()
-        let a = e.target;
-        let url = a.href;
+        let a = e.target.closest('a');
+        let url = a.getAttribute('href');
         let response = await makeRequest(url);
 
-        if (a.className === 'bi bi-heart') {
-            a.className = 'bi bi-heart-fill';
+        if (a.querySelector('.bi-heart-fill')) {
+            a.querySelector('.bi-heart-fill').classList.replace('bi-heart-fill', 'bi-heart');
         } else {
-            a.className = 'bi bi-heart';
+            a.querySelector('.bi-heart').classList.replace('bi-heart', 'bi-heart-fill');
         }
         let span = document.getElementById(a.dataset['spanCountId']);
         span.innerText = response.count;
