@@ -7,7 +7,7 @@ from django.utils.http import urlencode
 
 
 from django.db.models import Q
-from ..models import Article, ArticleLike
+from ..models import Article
 from ..forms import ArticleForm, SimpleSearchForm
 from django.views.generic import View, FormView, ListView, DetailView, CreateView, UpdateView, DeleteView
 
@@ -120,23 +120,11 @@ class ArticleDeleteView(UserPassesTestMixin, DeleteView):
     #     return redirect('webapp:index')
 
 
-class LikeArticleView(View):
-    def post(self, request, article_id, *args, **kwargs):
-        return self.toggle_like(request, article_id, liked=True)
-
-    def delete(self, request, article_id, *args, **kwargs):
-        return self.toggle_like(request, article_id, liked=False)
-
-    def toggle_like(self, request, article_id, liked):
-        article = get_object_or_404(Article, id=article_id)
-
-        if request.user.is_authenticated:
-            if liked:
-                article.likes.add(request.user)
-            else:
-                article.likes.remove(request.user)
-
-            like_count = article.likes.count()
-            return JsonResponse({'liked': liked, 'like_count': like_count})
+class LikeArticleView(LoginRequiredMixin, View):
+    def get(self, request, pk, *args, **kwargs):
+        article = get_object_or_404(Article, pk=pk)
+        if request.user in article.likes.all():
+            article.likes.remove(request.user)
         else:
-            return JsonResponse({'error': 'User not authenticated'}, status=401)
+            article.likes.add(request.user)
+        return JsonResponse({'count': article.likes.count()}, safe=False)
