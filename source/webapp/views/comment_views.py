@@ -1,4 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.http import JsonResponse
+from django.views import View
 from django.views.generic import CreateView, UpdateView, DeleteView
 from webapp.models import Comment, Article
 from django.urls import reverse
@@ -45,3 +47,13 @@ class CommentDeleteView(PermissionRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse('webapp:article_view', kwargs={'pk': self.object.article.pk})
+
+
+class LikeCommentView(LoginRequiredMixin, View):
+    def get(self, request, pk, *args, **kwargs):
+        comment = get_object_or_404(Comment, pk=pk)
+        if request.user in comment.likes.all():
+            comment.likes.remove(request.user)
+        else:
+            comment.likes.add(request.user)
+        return JsonResponse({'count': comment.likes.count()}, safe=False)
